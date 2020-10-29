@@ -10,6 +10,5 @@ Data fetch from twitter - initial data for my service.
 
 ### TODO
 I need to have pure text with links and image.
-* Clean keywords from duplicates!
-* Download image, delete hashtags, annotations from example data.json
+* FIX base64 encoding, implement saving,
 * Full integration: use keywords.txt and save post object with graphql, delete duplicate tweets by id!!! save tweets to file(?)
