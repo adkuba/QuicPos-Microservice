@@ -80,7 +80,7 @@ def addKeyword(keyword, f):
         f.write("%s," % keyword)
 
 
-with open('keywords.txt', 'w') as f:
+with open('keywords-temp.txt', 'w') as f:
     for idx, country in enumerate(countries):
         print("")
         print("PROCESS: {:.1f}%, country: {}".format(idx*100/len(countries), country[0]))
