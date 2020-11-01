@@ -27,36 +27,32 @@ Saves json tweets in data folder to my server.
 ## Neural net
 Neural nets description.
 
-### Recommender net
+### generate-recommender.py
 Recommender neural net in/out:
-* input: 5 last posts, posts to compare -> TEST HOW FAST NET WORKS! and change number of last posts. In addition userID of request! 6x array of object:
-    - text - string
-    - userID - string
-    - reports - array of userID - string
-    - creationTime - date
-    - image 224x224 rgb
-    - views - array object {userID - string, time - float, localization - string, device - string, date - date}
-    - shares - array of userID - string
+* input: post to compare -> TEST HOW FAST NET WORKS! In addition userID of request! Input:
+    - text - 100x array of ints - string converted to int tokens with example keras one hot in golang!
+    - userID - uint32 (CHANGE in server from uuid and in mongo collection with last int! max int is 4294967295)
+    - reports - array of userID - uint32 100 random chosen ids
+    - creationTime - int64 timestamp
+    - image 224x224x3 - float input
+    - views - 100x array with array {userID - uint32, time - float, latitude - float, longitude - float, device - int, date - int64} (CHANGE in server - add long/lattitude and device to  example 1 - ios 2 - android then 5 digits of phone model, maybe new collection in mongo needed?)
+    - shares - 100x array of userID - uint32
+    - requesting userID - uint32
 * output: time, share
     - float and bool
 
-### Spam detector
+### generate-detector.py
 Spam detector neural net in/out:
-* input: post to review
-    - text - string
-    - userID - string
-    - reports - array of userID - string
-    - creationTime - date
-    - image 224x224 rgb
-    - views - array object {userID - string, time - float, localization - string, device - string, date - date}
-    - shares - array of userID - string
+* input: similar to recommender, without "requesting userID"
 * output: spam or not
     - bool
 
-### Structure
-* Image connected to mobile net similar structure
-* Hidden units 256
-* Hidden layers init 2 - TEST SPEED and change number of layers!
+### Structure desc
+* flatten arrays!
+* for image 2x Conv2D layer to flatten input
+* every input except
+    - requesting userID
+    - userID
+    - creation time
 
-### How to create fixed size input ???
-Hash from object?
+has additional dense 128 layer example views params connects to special dense layer. Then 2 dense 256 layers combining all inputs (from 128 dense layers or direct inputs) and final layer is size 2 - recomender system or size 1 spam detector.
