@@ -25,7 +25,7 @@ Saves json tweets in data folder to my server.
 
 
 ## Neural net
-Neural nets description.
+Neural nets description. Important notes about **Text preprocessing for neural net** [notes](https://github.com/adkuba/QuicPos-Server/issues/4#issuecomment-720122145)
 
 ### generate-recommender.py
 Recommender neural net in/out:
@@ -38,21 +38,21 @@ Recommender neural net in/out:
     - views - 100x array with array {userID - uint32, time - float, latitude - float, longitude - float, device - int, date - int64} (CHANGE in server - add long/lattitude and device to  example 1 - ios 2 - android then 5 digits of phone model, maybe new collection in mongo needed?)
     - shares - 100x array of userID - uint32
     - requesting userID - uint32
+    - requesting lat and long-itutte
+    - requesting time
 * output: time, share
     - float and bool
 
 ### generate-detector.py
 Spam detector neural net in/out:
-* input: similar to recommender, without "requesting userID"
+* input: similar to recommender, without "requesting *"
 * output: spam or not
     - bool
 
 ### Structure desc
 * flatten arrays!
 * for image 2x Conv2D layer to flatten input
-* every input except
-    - requesting userID
+* every input has additional dense 128 layer example views params connects to special dense layer. Then 1 dense 256 layer combining all inputs (from 128 dense layers or direct inputs) and final layer is size 2 - recomender system or size 1 spam detector. Combined input for one 128 dense layer:
+    - requesting params
     - userID
     - creation time
-
-has additional dense 128 layer example views params connects to special dense layer. Then 2 dense 256 layers combining all inputs (from 128 dense layers or direct inputs) and final layer is size 2 - recomender system or size 1 spam detector.

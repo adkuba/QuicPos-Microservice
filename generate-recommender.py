@@ -14,9 +14,12 @@ creationInput = tf.keras.Input(shape=(1,))
 imageInput = tf.keras.Input(shape=(224, 224, 3))
 viewsInput = tf.keras.Input(shape=(100, 6))
 sharesInput = tf.keras.Input(shape=(100,))
-requestingInput = tf.keras.Input(shape=(1,))
+requestingUserInput = tf.keras.Input(shape=(1,))
+requestingLatInput = tf.keras.Input(shape=(1,))
+requestingLongInput = tf.keras.Input(shape=(1,))
+requestingTimeInput = tf.keras.Input(shape=(1,))
 
-inputArray = [textInput, userInput, reportsInput, creationInput, imageInput, viewsInput, sharesInput, requestingInput]
+inputArray = [textInput, userInput, reportsInput, creationInput, imageInput, viewsInput, sharesInput, requestingUserInput, requestingLatInput, requestingLongInput, requestingTimeInput]
 
 
 #additional dense
@@ -33,7 +36,7 @@ imageFlat = tf.keras.layers.Flatten()(conv2)
 imageDense = tf.keras.layers.Dense(128, activation='softmax')(imageFlat)
 
 #concat rest
-restCon = tf.keras.layers.Concatenate()([userInput, creationInput, requestingInput])
+restCon = tf.keras.layers.Concatenate()([userInput, creationInput, requestingUserInput, requestingLatInput, requestingLongInput, requestingTimeInput])
 restDense = tf.keras.layers.Dense(128, activation='softmax')(restCon)
 
 #concat all + final layers
@@ -54,15 +57,19 @@ text = numpy.array([[0]*100])
 user = numpy.array([[22344]])
 reports = numpy.array([[0]*100])
 creation = numpy.array([[2.3]])
-image = numpy.array([[[ [0]*3 ]*224 ]*224])
+image = numpy.array([[[ [0.1]*3 ]*224 ]*224])
 views = numpy.array([[ [0]*6 ]*100])
 shares = numpy.array([[0]*100])
-requesting = numpy.array([[334]])
+requestingUser = numpy.array([[334]])
+requestingLat = numpy.array([[51.23]])
+requestingLong = numpy.array([[41.23]])
+requestingTime = numpy.array([[227364]])
 
-myRandomInput = [text, user, reports, creation, image, views, shares, requesting]
+myRandomInput = [text, user, reports, creation, image, views, shares, requestingUser, requestingLat, requestingLong, requestingTime]
 
 result = model.predict(myRandomInput)
 print(result)
 
 #save
-model.save("./recommender.h5")
+model.save("./out/recommender.h5")
+tf.saved_model.save(model, "./out/recommender")
