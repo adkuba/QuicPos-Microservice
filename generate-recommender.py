@@ -7,7 +7,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 #recommender net
 
 #inputs
-textInput = tf.keras.Input(shape=(100,))
+textInput = tf.keras.Input(shape=(400,))
 userInput = tf.keras.Input(shape=(1,))
 reportsInput = tf.keras.Input(shape=(100,))
 creationInput = tf.keras.Input(shape=(1,))
@@ -53,7 +53,7 @@ model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001), loss='
 
 
 #test running
-text = numpy.array([[0]*100])
+text = numpy.array([[0]*400])
 user = numpy.array([[22344]])
 reports = numpy.array([[0]*100])
 creation = numpy.array([[2.3]])
