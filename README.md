@@ -21,6 +21,8 @@ Data fetch from twitter - initial data for my service. I need to have pure text 
 Saves json tweets in data folder to my server.
 * text parsing - remove hashtags annotations
 * photo find and convert to base64
+* check how much space is used in cloud storage <code>gsutil du -sh gs://quicpos-images/</code>
+* last idx: 1621
 
 
 

@@ -3,12 +3,13 @@ import base64
 import requests
 from os import listdir
 from os.path import isfile, join
+import sys
 
 
 ids = []
-url = "http://www.api.quicpos.com/query"
+url = "http://localhost:8080/query"
 files = [f for f in listdir("data/") if isfile(join("data/", f))]
-
+addition = 160
 
 
 def findUrl(mediaKey):
@@ -19,9 +20,9 @@ def findUrl(mediaKey):
             return 'not-photo'
 
 
-for idx, file in enumerate(files):
+for idx, file in enumerate(files[addition:]):
 
-    print("\nPROCESSING: {:.1f}%, tweets for keyword: {}".format(idx*100/len(files), file))
+    print("\nPROCESSING: {:.1f}%, tweets for keyword: {}, idx {}".format((idx+addition)*100/len(files), file, idx+addition))
     tweets = []
     media = []
 
@@ -38,7 +39,7 @@ for idx, file in enumerate(files):
 
     for tweet in tweets:
         tweetID = tweet['id']
-        print("INFO: Processing {}".format(tweetID))
+        print("INFO: Processing {:.1f}%, tweet: {}".format((idx+addition)*100/len(files), tweetID))
 
         #check if tweet is not duplicate
         if tweetID not in ids:
@@ -50,22 +51,11 @@ for idx, file in enumerate(files):
             
             #parse text
             text = text.replace("#", "")
-            try:
-                entities = tweet['entities']
-                try:
-                    mentions = entities['mentions']
-                    for mention in mentions:
-                        start = mention['start']
-                        end = mention['end']
-                        textStart = text[:start-textOffset]
-                        textEnd = text[end-textOffset:]
-                        textOffset += end - start
-                        text = textStart + textEnd
-                except KeyError:
-                    print("INFO: No mentions!")
-            except KeyError:
-                print("INFO: No entities!")
+            text = text.replace("@", "")
+            text = text.replace('\n', '\\n')
+            text = text.replace('"', "'")
 
+            skip = False
 
             #search for image
             try:
@@ -73,14 +63,16 @@ for idx, file in enumerate(files):
                 try:
                     mediaKeys = attachments['media_keys']
                     for key in mediaKeys:
-                        url = findUrl(key)
-                        if url != 'not-photo':
-                            response = requests.get(url)
+                        urlIMG = findUrl(key)
+                        if urlIMG != 'not-photo':
+                            response = requests.get(urlIMG)
                             if response.status_code != 200:
                                 print("INFO: Can't get photo for tweet {}".format(tweetID))
                             else:
                                 photo = str(base64.b64encode(response.content))
-                                urlArray = url.split('.')
+                                urlArray = urlIMG.split('.')
+                                if urlArray[-1] not in ['jpg', 'jpeg']:
+                                    skip = True
                                 photo = "data:image/" + urlArray[-1] + ";base64," + photo[2:len(photo)-1]
                                 break
                 except KeyError:
@@ -88,14 +80,18 @@ for idx, file in enumerate(files):
             except KeyError:
                 print("INFO: No attachments!")
 
-            text = text.replace("RT : ", "")
+            if skip:
+                print("SKIPPING: Not jpeg")
+                continue
+
+            text = text.replace("RT ", "")
             text = text.strip()
 
             query = """mutation create {
                 createPost(
                     input: {
                     text: "%s"
-                    userId: "%s"
+                    userId: %i
                     image: "%s"
                     }
                 ) {
@@ -108,7 +104,12 @@ for idx, file in enumerate(files):
                     initialReview
                     image
                 }
-            }""" % (text, "bot", photo)
+            }""" % (text, -2, photo)
 
             r = requests.post(url, json={'query': query})
-            print("SENDING: " + r.status_code + "\n")
+            print("SENDING: " + str(r.status_code))
+
+            if r.status_code != 200:
+                print(query)
+            
+            print()
