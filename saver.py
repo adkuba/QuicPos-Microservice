@@ -9,7 +9,7 @@ import sys
 ids = []
 url = "http://localhost:8080/query"
 files = [f for f in listdir("data/") if isfile(join("data/", f))]
-addition = 160
+addition = 4191
 
 
 def findUrl(mediaKey):
@@ -25,6 +25,8 @@ for idx, file in enumerate(files[addition:]):
     print("\nPROCESSING: {:.1f}%, tweets for keyword: {}, idx {}".format((idx+addition)*100/len(files), file, idx+addition))
     tweets = []
     media = []
+    if file == ".gitkeep":
+        continue
 
     with open("data/" + file, "r") as read_file:
         data = json.load(read_file)

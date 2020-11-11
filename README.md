@@ -1,5 +1,6 @@
 # QuicPos-Microservice
 Machine learning workflow, python microservice.
+* open database with mongo shell <code>mongo "mongodb+srv://quicpos.felpr.gcp.mongodb.net/quicpos" --username admin</code>
 
 ## Twitter bot files
 All with progress info and reusability in mind.
@@ -22,7 +23,6 @@ Saves json tweets in data folder to my server.
 * text parsing - remove hashtags annotations
 * photo find and convert to base64
 * check how much space is used in cloud storage <code>gsutil du -sh gs://quicpos-images/</code>
-* last idx: 1621
 
 
 
@@ -58,3 +58,7 @@ Spam detector neural net in/out:
     - requesting params
     - userID
     - creation time
+
+### train.py
+Prepares data from database and trains nets. TODO:
+- load data from file, convert image and send to keras trainer
