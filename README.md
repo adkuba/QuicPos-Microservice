@@ -42,8 +42,8 @@ Recommender neural net in/out:
     - requesting userID - uint32
     - requesting lat and long-itutte
     - requesting time
-* output: time, share
-    - float and bool
+* output: view category
+    - very_bad_view, bad_view, avarage_view, good_view, excellent_view
 
 ### generate-detector.py
 Spam detector neural net in/out:
@@ -60,5 +60,14 @@ Spam detector neural net in/out:
     - creation time
 
 ### train.py
-Prepares data from database and trains nets. TODO:
-- load data from file, convert image and send to keras trainer
+Prepares data from database and trains nets. Loads data from file, converts image and sends to keras trainer. TODO:
+- connect with server
+- check if everything is ok
+
+Send folder with contents <code>scp -rp out root@142.93.232.180:~/out</code> Notes:
+- my avarage view time is 4.8s
+- max time 34.4s
+- min time 1.02
+
+### historyreader.py
+Shows chart of training results.

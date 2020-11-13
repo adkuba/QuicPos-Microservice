@@ -1,8 +1,8 @@
 import pickle
 import matplotlib.pyplot as plt
 
-path = "./out/"
-names =[ 'recommender_new']
+path = "./training/"
+names =[ 'recommender_history']
 val_acc = []
 
 for name in names:

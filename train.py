@@ -10,6 +10,7 @@ import io
 import numpy
 import random
 from tensorflow import keras
+import tensorflow as tf
 import pickle
 
 
@@ -29,14 +30,6 @@ def getposts(page_size, page_num, query):
     return [x for x in cursor]
 
 
-#check if user is in shares
-def share(array, uid):
-    if array:
-        if uid in array:
-            return 1
-    return 0
-
-
 #difference of two lists
 def diff(li1, li2):
     li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
@@ -53,12 +46,6 @@ def dataPrepare(post, views):
     if views:
         for view in views:
             view['date'] = float(datetime.timestamp(view['date']))/100000.0
-            if view['time'] <= 5:
-                view['time'] = 1
-            elif view['time'] > 5 and view['time'] <= 15:
-                view['time'] = 2
-            else:
-                view['time'] = 3
             del view['localization']
             temp.append(view)
     views = temp
@@ -85,10 +72,77 @@ def saver(posts, path):
     return len(post_train), len(post_test)
 
 
+#blocked to number
 def isSpam(blocked):
     if blocked:
         return 1
     return 0
+
+
+#post generator data
+def postGenData(post):
+    #text
+    text = []
+    for idx in range(400):
+        ch = 0
+        if idx < len(post['text']):
+            ch = ord(post['text'][idx])
+        text.append(ch)
+    
+    #user
+    user = [post['userid']]
+
+    #reports
+    reports = []
+    for idx in range(100):
+        report = 0
+        if idx < len(post['reports']):
+            report = post['reports'][idx]
+        reports.append(report)
+    random.shuffle(reports)
+
+    #creation
+    creation = [post['creationtime']]
+
+    #image
+    image = [[ [0]*3 ]*224 ]*224
+    if post['image'] != "":
+        try:
+            response = requests.get("https://storage.googleapis.com/quicpos-images/" + post['image'] + "_small")
+            if response.status_code == 200:
+                imagePIL = Image.open(io.BytesIO(response.content))
+                imagePIL = imagePIL.convert('RGB')
+                imageNumpy = numpy.array(imagePIL)
+                image = imageNumpy.tolist()
+        except:
+            print("CANT download image")
+
+    #views
+    views = []
+    for idx in range(100):
+        view = [0] * 6
+        if idx < len(post['views']):
+            userView = post['views'][idx]['userid']
+            deviceView = post['views'][idx]['device']
+            latiView = post['views'][idx]['lati']
+            longView = post['views'][idx]['long']
+            timeView = post['views'][idx]['time']
+            dateView = post['views'][idx]['date']
+            view = [userView, deviceView, latiView, longView, timeView, dateView]
+        views.append(view)
+    random.shuffle(views)
+
+    #shares
+    shares = []
+    for idx in range(100):
+        share = 0
+        if idx < len(post['shares']):
+            share = post['shares'][idx]
+        shares.append(share)
+    random.shuffle(shares)
+
+    return text, user, reports, creation, image, views, shares
+
 
 #Create training set for recommender
 shutil.rmtree('./training', ignore_errors=True)
@@ -132,8 +186,21 @@ while True:
             postClone['views'] = viewsClone
             data['post'] = postClone
 
-            data['time'] = view['time']
-            data['share'] = share(post['shares'], view['userid'])
+            #very bad post
+            if view['time'] <= 2:
+                data['time'] = [1, 0, 0, 0, 0]
+            #bad post
+            elif view['time'] > 2 and view['time'] <= 4:
+                data['time'] = [0, 1, 0, 0, 0]
+            #avarage post
+            elif view['time'] > 4 and view['time'] <= 7:
+                data['time'] = [0, 0, 1, 0, 0]
+            #good post
+            elif view['time'] > 7 and view['time'] <= 15:
+                data['time'] = [0, 0, 0, 1, 0]
+            #amazing post
+            else:
+                data['time'] = [0, 0, 0, 0, 1]
             post_data.append(data)
     
     a, b = saver(post_data, './training/recommender')
@@ -143,6 +210,8 @@ while True:
 
 
 idx = 1
+detector_train_size = 0
+detector_test_size = 0
 
 
 #spam posts data
@@ -160,7 +229,9 @@ while True:
         data['post'] = post
         post_data.append(data)
 
-    saver(post_data, './training/detector')
+    a, b = saver(post_data, './training/detector')
+    detector_train_size += a
+    detector_test_size += b
     idx += 1
 
 
@@ -181,72 +252,21 @@ def recommenderGenerator(path):
         arequestingLati = []
         arequestingLong = []
         arequestingTime = []
-        aoutTime = []
-        aoutShare = []
-
+        aOut = []
 
         for file in os.listdir(path):
             with open(path + "/" + file) as infile:
                 data_set = json.load(infile)
                 for data in data_set:
-                    #text
-                    text = []
-                    for idx in range(400):
-                        ch = 0
-                        if idx < len(data['post']['text']):
-                            ch = ord(data['post']['text'][idx])
-                        text.append(ch)
-                    atext.append(text)
-
-                    #user
-                    user = [data['post']['userid']]
-                    auser.append(user)
-
-                    #reports
-                    reports = []
-                    for idx in range(100):
-                        report = 0
-                        if idx < len(data['post']['reports']):
-                            report = data['post']['reports'][idx]
-                        reports.append(report)
-                    areports.append(reports)
-
-                    #creation
-                    creation = [data['post']['creationtime']]
-                    acreation.append(creation)
-
-                    #image
-                    image = [[ [0]*3 ]*224 ]*224
-                    if data['post']['image'] != "":
-                        response = requests.get("https://storage.googleapis.com/quicpos-images/" + post['image'] + "_small")
-                        if response.status_code == 200:
-                            imagePIL = Image.open(io.BytesIO(response.content))
-                            image = numpy.array(imagePIL).tolist()
-                    aimage.append(image)
-
-                    #views
-                    views = []
-                    for idx in range(100):
-                        view = [0] * 6
-                        if idx < len(data['post']['views']):
-                            userView = data['post']['views'][idx]['userid']
-                            deviceView = data['post']['views'][idx]['device']
-                            latiView = data['post']['views'][idx]['lati']
-                            longView = data['post']['views'][idx]['long']
-                            timeView = data['post']['views'][idx]['time']
-                            dateView = data['post']['views'][idx]['date']
-                            view = [userView, deviceView, latiView, longView, timeView, dateView]
-                        views.append(view)
-                    aviews.append(views)
-
-                    #shares
-                    shares = []
-                    for idx in range(100):
-                        share = 0
-                        if idx < len(data['post']['shares']):
-                            share = data['post']['shares'][idx]
-                        shares.append(share)
+                    #post data
+                    text, user, reports, creation, image, views, shares = postGenData(data['post'])
                     ashares.append(shares)
+                    aviews.append(views)
+                    aimage.append(image)
+                    acreation.append(creation)
+                    areports.append(reports)
+                    auser.append(user)
+                    atext.append(text)
 
                     #requesting user
                     requestingUser = data['userid']
@@ -264,12 +284,11 @@ def recommenderGenerator(path):
                     requestingTime = data['requesttime']
                     arequestingTime.append(requestingTime)
 
-                    #out time
-                    aoutTime.append(data['time'])
-                    aoutShare.append(data['share'])
+                    #out
+                    aOut.append(data['time'])
 
-                    if len(aoutTime) == batch_size:
-                        yield [numpy.array(atext), numpy.array(auser), numpy.array(areports), numpy.array(acreation), numpy.array(aimage), numpy.array(aviews), numpy.array(ashares), numpy.array(arequestingUser), numpy.array(arequestingLati), numpy.array(arequestingLong), numpy.array(arequestingTime)], [numpy.array(aoutTime), numpy.array(aoutShare)]
+                    if len(aOut) == batch_size:
+                        yield [numpy.array(atext), numpy.array(auser), numpy.array(areports), numpy.array(acreation), numpy.array(aimage), numpy.array(aviews), numpy.array(ashares), numpy.array(arequestingUser), numpy.array(arequestingLati), numpy.array(arequestingLong), numpy.array(arequestingTime)], numpy.array(aOut)
                         atext = []
                         auser = []
                         areports = []
@@ -281,14 +300,13 @@ def recommenderGenerator(path):
                         arequestingLati = []
                         arequestingLong = []
                         arequestingTime = []
-                        aoutTime = []
-                        aoutShare = []
+                        aOut = []
 
 
 #train recommender
 recommender_train_gen = recommenderGenerator("./training/recommender/train")
 recommender_test_gen = recommenderGenerator("./training/recommender/test")
-epochs = 100
+epochs = 10
 steps_per_epoch = recommender_train_size / batch_size
 validation_steps = recommender_test_size / batch_size
 
@@ -299,7 +317,70 @@ print()
 print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
 print()
 
-with open("./out/recommender_new", 'wb') as filepi:
+with open("./training/recommender_history", 'wb') as filepi:
     pickle.dump(history.history, filepi)
 
-model.save("./out/recommender_new.h5")
+model.save("./out/recommender.h5")
+tf.saved_model.save(model, "./out/recommender")
+
+
+#detector generator
+def detectorGenerator(path):
+    while True:
+        atext = []
+        auser = []
+        areports = []
+        acreation = []
+        aimage = []
+        aviews = []
+        ashares = []
+        aoutSpam = []
+
+        for file in os.listdir(path):
+            with open(path + "/" + file) as infile:
+                data_set = json.load(infile)
+                for data in data_set:
+                    #post data
+                    text, user, reports, creation, image, views, shares = postGenData(data['post'])
+                    ashares.append(shares)
+                    aviews.append(views)
+                    aimage.append(image)
+                    acreation.append(creation)
+                    areports.append(reports)
+                    auser.append(user)
+                    atext.append(text)
+
+                    #out spam
+                    aoutSpam.append([data['spam']])
+
+                    if len(aoutSpam) == batch_size:
+                        yield [numpy.array(atext), numpy.array(auser), numpy.array(areports), numpy.array(acreation), numpy.array(aimage), numpy.array(aviews), numpy.array(ashares)], numpy.array(aoutSpam)
+                        atext = []
+                        auser = []
+                        areports = []
+                        acreation = []
+                        aimage = []
+                        aviews = []
+                        ashares = []
+                        aoutSpam = []
+
+
+#train detector
+detector_train_gen = detectorGenerator("./training/detector/train")
+detector_test_gen = detectorGenerator("./training/detector/test")
+epochs = 1
+steps_per_epoch = detector_train_size / batch_size
+validation_steps = detector_test_size / batch_size
+
+model = keras.models.load_model("./out/detector.h5")
+history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
+
+print()
+print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
+print()
+
+with open("./training/detector_history", 'wb') as filepi:
+    pickle.dump(history.history, filepi)
+
+model.save("./out/detector.h5")
+tf.saved_model.save(model, "./out/detector")

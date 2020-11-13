@@ -38,14 +38,14 @@ restDense = tf.keras.layers.Dense(128, activation='softmax')(restCon)
 #concat all + final layers
 allCon = tf.keras.layers.Concatenate()([textDense, reportsDense, viewsDense, sharesDense, imageDense, reportsDense])
 connected = tf.keras.layers.Dense(256, activation='softmax')(allCon)
-out = tf.keras.layers.Dense(1, activation='softmax')(connected)
+out = tf.keras.layers.Dense(1, activation='sigmoid')(connected)
 
 #model
 model = tf.keras.Model(inputs=inputArray, outputs=out)
 #print(model.summary())
 
 #compile
-model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
 
 
 #test running
@@ -60,7 +60,7 @@ shares = numpy.array([[0]*100])
 myRandomInput = [text, user, reports, creation, image, views, shares]
 
 result = model.predict(myRandomInput)
-print(result)
+print(result.tolist())
 
 #save
 model.save("./out/detector.h5")
