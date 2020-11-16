@@ -12,6 +12,7 @@ import random
 from tensorflow import keras
 import tensorflow as tf
 import pickle
+import time
 
 
 #Init trainer
@@ -144,100 +145,6 @@ def postGenData(post):
     return text, user, reports, creation, image, views, shares
 
 
-#Create training set for recommender
-shutil.rmtree('./training', ignore_errors=True)
-os.mkdir('./training')
-os.mkdir('./training/recommender')
-os.mkdir('./training/recommender/train')
-os.mkdir('./training/recommender/test')
-os.mkdir('./training/detector')
-os.mkdir('./training/detector/train')
-os.mkdir('./training/detector/test')
-
-
-#process posts in batches of 100
-size = 100
-idx = 1
-recommender_train_size = 0
-recommender_test_size = 0
-
-#Rocommender data
-while True:
-    post_data = []
-    posts = getposts(size, idx, {"blocked": False, "views": {"$ne": None}})
-    if len(posts) == 0:
-        break
-    
-    for post in posts:
-        #prepare values
-        post, views = dataPrepare(post, post['views'])
-
-        #create training set for every user
-        for view in views:
-            data = {}
-            data['userid'] = view['userid']
-            data['long'] = view['long']
-            data['lati'] = view['lati']
-            data['requesttime'] = view['date']
-
-            viewsClone = views.copy()
-            viewsClone.remove(view)
-            postClone = post.copy()
-            postClone['views'] = viewsClone
-            data['post'] = postClone
-
-            #very bad post
-            if view['time'] <= 2:
-                data['time'] = [1, 0, 0, 0, 0]
-            #bad post
-            elif view['time'] > 2 and view['time'] <= 4:
-                data['time'] = [0, 1, 0, 0, 0]
-            #avarage post
-            elif view['time'] > 4 and view['time'] <= 7:
-                data['time'] = [0, 0, 1, 0, 0]
-            #good post
-            elif view['time'] > 7 and view['time'] <= 15:
-                data['time'] = [0, 0, 0, 1, 0]
-            #amazing post
-            else:
-                data['time'] = [0, 0, 0, 0, 1]
-            post_data.append(data)
-    
-    a, b = saver(post_data, './training/recommender')
-    recommender_train_size += a
-    recommender_test_size += b
-    idx += 1
-
-
-idx = 1
-detector_train_size = 0
-detector_test_size = 0
-
-
-#spam posts data
-while True:
-    post_data = []
-    posts = getposts(size, idx, {})
-    if len(posts) == 0:
-        break
-
-    for post in posts:
-        data = {}
-        data['spam'] = isSpam(post['blocked'])
-        post, views = dataPrepare(post, post['views'])
-        post['views'] = views
-        data['post'] = post
-        post_data.append(data)
-
-    a, b = saver(post_data, './training/detector')
-    detector_train_size += a
-    detector_test_size += b
-    idx += 1
-
-
-batch_size = 32
-
-
 #recomennder data generator
 def recommenderGenerator(path):
     while True:
@@ -303,27 +210,6 @@ def recommenderGenerator(path):
                         aOut = []
 
 
-#train recommender
-recommender_train_gen = recommenderGenerator("./training/recommender/train")
-recommender_test_gen = recommenderGenerator("./training/recommender/test")
-epochs = 10
-steps_per_epoch = recommender_train_size / batch_size
-validation_steps = recommender_test_size / batch_size
-
-model = keras.models.load_model("./out/recommender.h5")
-history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
-
-print()
-print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
-print()
-
-with open("./training/recommender_history", 'wb') as filepi:
-    pickle.dump(history.history, filepi)
-
-model.save("./out/recommender.h5")
-tf.saved_model.save(model, "./out/recommender")
-
-
 #detector generator
 def detectorGenerator(path):
     while True:
@@ -365,22 +251,154 @@ def detectorGenerator(path):
                         aoutSpam = []
 
 
-#train detector
-detector_train_gen = detectorGenerator("./training/detector/train")
-detector_test_gen = detectorGenerator("./training/detector/test")
-epochs = 1
-steps_per_epoch = detector_train_size / batch_size
-validation_steps = detector_test_size / batch_size
+while True:
+    #Create training set for recommender
+    shutil.rmtree('./training', ignore_errors=True)
+    os.mkdir('./training')
+    os.mkdir('./training/recommender')
+    os.mkdir('./training/recommender/train')
+    os.mkdir('./training/recommender/test')
+    os.mkdir('./training/detector')
+    os.mkdir('./training/detector/train')
+    os.mkdir('./training/detector/test')
 
-model = keras.models.load_model("./out/detector.h5")
-history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
 
-print()
-print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
-print()
+    #process posts in batches of 100
+    size = 100
+    idx = 1
+    recommender_train_size = 0
+    recommender_test_size = 0
 
-with open("./training/detector_history", 'wb') as filepi:
-    pickle.dump(history.history, filepi)
+    #Rocommender data
+    while True:
+        post_data = []
+        posts = getposts(size, idx, {"blocked": False, "views": {"$ne": None}})
+        if len(posts) == 0:
+            break
+        
+        for post in posts:
+            #prepare values
+            post, views = dataPrepare(post, post['views'])
 
-model.save("./out/detector.h5")
-tf.saved_model.save(model, "./out/detector")
+            #create training set for every user
+            for view in views:
+                data = {}
+                data['userid'] = view['userid']
+                data['long'] = view['long']
+                data['lati'] = view['lati']
+                data['requesttime'] = view['date']
+
+                viewsClone = views.copy()
+                viewsClone.remove(view)
+                postClone = post.copy()
+                postClone['views'] = viewsClone
+                data['post'] = postClone
+
+                #very bad post
+                if view['time'] <= 2:
+                    data['time'] = [1, 0, 0, 0, 0]
+                #bad post
+                elif view['time'] > 2 and view['time'] <= 4:
+                    data['time'] = [0, 1, 0, 0, 0]
+                #avarage post
+                elif view['time'] > 4 and view['time'] <= 7:
+                    data['time'] = [0, 0, 1, 0, 0]
+                #good post
+                elif view['time'] > 7 and view['time'] <= 15:
+                    data['time'] = [0, 0, 0, 1, 0]
+                #amazing post
+                else:
+                    data['time'] = [0, 0, 0, 0, 1]
+                post_data.append(data)
+        
+        a, b = saver(post_data, './training/recommender')
+        recommender_train_size += a
+        recommender_test_size += b
+        idx += 1
+
+
+    idx = 1
+    detector_train_size = 0
+    detector_test_size = 0
+
+
+    #spam posts data
+    while True:
+        post_data = []
+        posts = getposts(size, idx, {})
+        if len(posts) == 0:
+            break
+
+        for post in posts:
+            data = {}
+            data['spam'] = isSpam(post['blocked'])
+            post, views = dataPrepare(post, post['views'])
+            post['views'] = views
+            data['post'] = post
+            post_data.append(data)
+
+        a, b = saver(post_data, './training/detector')
+        detector_train_size += a
+        detector_test_size += b
+        idx += 1
+
+
+    batch_size = 32
+
+
+    #train recommender
+    recommender_train_gen = recommenderGenerator("./training/recommender/train")
+    recommender_test_gen = recommenderGenerator("./training/recommender/test")
+    epochs = 20
+    steps_per_epoch = recommender_train_size / batch_size
+    validation_steps = recommender_test_size / batch_size
+
+    model = keras.models.load_model("./out/recommender.h5")
+    history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
+
+    detector_acc = history.history['val_accuracy'][-1]
+    print()
+    print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
+    print()
+
+    with open("./training/recommender_history", 'wb') as filepi:
+        pickle.dump(history.history, filepi)
+
+    model.save("./out/recommender.h5")
+    tf.saved_model.save(model, "./out/recommender")
+
+
+    #train detector
+    detector_train_gen = detectorGenerator("./training/detector/train")
+    detector_test_gen = detectorGenerator("./training/detector/test")
+    epochs = 5
+    steps_per_epoch = detector_train_size / batch_size
+    validation_steps = detector_test_size / batch_size
+
+    model = keras.models.load_model("./out/detector.h5")
+    history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
+
+    recommender_acc = history.history['val_accuracy'][-1]
+    print()
+    print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
+    print()
+
+    with open("./training/detector_history", 'wb') as filepi:
+        pickle.dump(history.history, filepi)
+
+    model.save("./out/detector.h5")
+    tf.saved_model.save(model, "./out/detector")
+
+
+    query = """mutation learning {
+        learning(input: {
+            recommender: %f
+            detector: %f
+        })   
+    }""" % (recommender_acc, detector_acc)
+
+    r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
+    print("SENDING: " + str(r.status_code))
+
+    #wait 1 day
+    time.sleep(60 * 60 * 24)

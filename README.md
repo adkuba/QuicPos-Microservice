@@ -60,9 +60,8 @@ Spam detector neural net in/out:
     - creation time
 
 ### train.py
-Prepares data from database and trains nets. Loads data from file, converts image and sends to keras trainer. TODO:
-- connect with server
-- check if everything is ok
+Prepares data from database and trains nets. Loads data from file, converts image and sends to keras trainer.
+- all logs to file <code>SomeCommand &>> SomeFile.txt  </code>
 
 Send folder with contents <code>scp -rp out root@142.93.232.180:~/out</code> Notes:
 - my avarage view time is 4.8s
