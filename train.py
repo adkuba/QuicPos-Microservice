@@ -356,7 +356,7 @@ while True:
     model = keras.models.load_model("./out/recommender.h5")
     history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
 
-    detector_acc = history.history['val_accuracy'][-1]
+    recommender_acc = history.history['val_accuracy'][-1]
     print()
     print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
     print()
@@ -378,7 +378,7 @@ while True:
     model = keras.models.load_model("./out/detector.h5")
     history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
 
-    recommender_acc = history.history['val_accuracy'][-1]
+    detector_acc = history.history['val_accuracy'][-1]
     print()
     print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
     print()
@@ -391,13 +391,10 @@ while True:
 
 
     query = """mutation learning {
-        learning(input: {
-            recommender: %f
-            detector: %f
-        })   
-    }""" % (recommender_acc, detector_acc)
+        learning(input: { recommender: %f, detector: %f }, password: "%s")   
+    }""" % (recommender_acc, detector_acc, "kuba")
 
-    r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
+    r = requests.post("https://www.api.quicpos.com/query", json={'query': query}, verify=False)
     print("SENDING: " + str(r.status_code))
 
     #wait 1 day
