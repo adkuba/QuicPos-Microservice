@@ -42,6 +42,7 @@ def dataPrepare(post, views):
     del post['_id']
     del post['blocked']
     del post['initialreview']
+    del post['outsideviews']
     post['creationtime'] = float(datetime.timestamp(post['creationtime']))/100000.0
     temp = []
     if views:
