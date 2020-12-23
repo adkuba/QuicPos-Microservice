@@ -13,6 +13,7 @@ from tensorflow import keras
 import tensorflow as tf
 import pickle
 import time
+import scp_sender
 
 
 #Init trainer
@@ -390,7 +391,10 @@ while True:
     model.save("./out/detector.h5")
     tf.saved_model.save(model, "./out/detector")
 
+    #scp send
+    scp_sender.sendFiles()
 
+    #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
     }""" % (recommender_acc, detector_acc, "kuba")

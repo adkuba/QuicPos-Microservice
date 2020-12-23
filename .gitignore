@@ -5,3 +5,5 @@ training/
 
 !data/.gitkeep
 !out/.gitkeep
+
+__pycache__/
