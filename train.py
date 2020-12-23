@@ -399,7 +399,7 @@ while True:
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
     }""" % (recommender_acc, detector_acc, "kuba")
 
-    r = requests.post("https://www.api.quicpos.com/query", json={'query': query}, verify=False)
+    r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print("SENDING: " + str(r.status_code))
 
     #wait 1 day
