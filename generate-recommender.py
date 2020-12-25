@@ -71,5 +71,5 @@ result = model.predict(myRandomInput)
 print(result.tolist())
 
 #save
-model.save("./out/recommender.h5")
-tf.saved_model.save(model, "./out/recommender")
+model.save("./out/recommender_init.h5")
+#tf.saved_model.save(model, "./out/recommender")

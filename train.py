@@ -327,9 +327,12 @@ while True:
     #spam posts data
     while True:
         post_data = []
-        posts = getposts(size, idx, {})
-        if len(posts) == 0:
+        posts_blocked = getposts(int(size/2), idx, {"blocked": True})
+        posts_ok = getposts(int(size/2), idx, {"blocked": False})
+        if len(posts_blocked) == 0 or len(posts_ok) == 0:
             break
+
+        posts = posts_blocked + posts_ok
 
         for post in posts:
             data = {}
@@ -351,11 +354,11 @@ while True:
     #train recommender
     recommender_train_gen = recommenderGenerator("./training/recommender/train")
     recommender_test_gen = recommenderGenerator("./training/recommender/test")
-    epochs = 20
+    epochs = 50
     steps_per_epoch = recommender_train_size / batch_size
     validation_steps = recommender_test_size / batch_size
 
-    model = keras.models.load_model("./out/recommender.h5")
+    model = keras.models.load_model("./out/recommender_init.h5")
     history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
 
     recommender_acc = history.history['val_accuracy'][-1]
@@ -373,11 +376,11 @@ while True:
     #train detector
     detector_train_gen = detectorGenerator("./training/detector/train")
     detector_test_gen = detectorGenerator("./training/detector/test")
-    epochs = 5
+    epochs = 50
     steps_per_epoch = detector_train_size / batch_size
     validation_steps = detector_test_size / batch_size
 
-    model = keras.models.load_model("./out/detector.h5")
+    model = keras.models.load_model("./out/detector_init.h5")
     history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps)
 
     detector_acc = history.history['val_accuracy'][-1]
@@ -400,7 +403,9 @@ while True:
     }""" % (recommender_acc, detector_acc, "kuba")
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
+    print()
     print("SENDING: " + str(r.status_code))
+    print()
 
-    #wait 1 day
-    time.sleep(60 * 60 * 24)
+    #wait 12 hours
+    time.sleep(60 * 60 * 12)

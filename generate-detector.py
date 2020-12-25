@@ -63,5 +63,5 @@ result = model.predict(myRandomInput)
 print(result.tolist())
 
 #save
-model.save("./out/detector.h5")
-tf.saved_model.save(model, "./out/detector")
+model.save("./out/detector_init.h5")
+#tf.saved_model.save(model, "./out/detector")
