@@ -327,8 +327,8 @@ while True:
     #spam posts data
     while True:
         post_data = []
-        posts_blocked = getposts(int(size/2), idx, {"blocked": True})
-        posts_ok = getposts(int(size/2), idx, {"blocked": False})
+        posts_blocked = getposts(int(size/2), idx, {"blocked": True, "initialreview": True})
+        posts_ok = getposts(int(size/2), idx, {"blocked": False, "initialreview": True})
         if len(posts_blocked) == 0 or len(posts_ok) == 0:
             break
 
