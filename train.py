@@ -18,7 +18,7 @@ import scp_sender
 
 #Init trainer
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-client = MongoClient("mongodb+srv://admin:funia@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
+client = MongoClient("")
 db = client['quicpos']
 collection = db['posts']
 
@@ -45,17 +45,32 @@ def dataPrepare(post, views):
     del post['initialreview']
     del post['outsideviews']
     post['creationtime'] = float(datetime.timestamp(post['creationtime']))/100000.0
+    post['userid'] = post['user']['Int']
+    del post['user']
     temp = []
     if views:
         for view in views:
             view['date'] = float(datetime.timestamp(view['date']))/100000.0
             del view['localization']
+            view['userid'] = view['user']['int']
+            del view['user']
             temp.append(view)
     views = temp
     if post['shares'] == None:
         post['shares'] = []
+    else:
+        sharesTemp = []
+        for sh in post['shares']:
+            sharesTemp.append(sh['int'])
+        post['shares'] = sharesTemp
     if post['reports'] == None:
         post['reports'] = []
+    else:
+        reportsTemp = []
+        for sh in post['reports']:
+            reportsTemp.append(sh['int'])
+        post['reports'] = reportsTemp
+
     return post, views
 
 
@@ -313,6 +328,7 @@ while True:
                     data['time'] = [0, 0, 0, 0, 1]
                 post_data.append(data)
         
+        #print(post_data)
         a, b = saver(post_data, './training/recommender')
         recommender_train_size += a
         recommender_test_size += b
@@ -348,13 +364,13 @@ while True:
         idx += 1
 
 
-    batch_size = 32
+    batch_size = 8
 
 
     #train recommender
     recommender_train_gen = recommenderGenerator("./training/recommender/train")
     recommender_test_gen = recommenderGenerator("./training/recommender/test")
-    epochs = 50
+    epochs = 1
     steps_per_epoch = recommender_train_size / batch_size
     validation_steps = recommender_test_size / batch_size
 
@@ -376,7 +392,7 @@ while True:
     #train detector
     detector_train_gen = detectorGenerator("./training/detector/train")
     detector_test_gen = detectorGenerator("./training/detector/test")
-    epochs = 50
+    epochs = 1
     steps_per_epoch = detector_train_size / batch_size
     validation_steps = detector_test_size / batch_size
 
@@ -400,7 +416,7 @@ while True:
     #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
-    }""" % (recommender_acc, detector_acc, "kuba")
+    }""" % (recommender_acc, detector_acc, "")
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print()
