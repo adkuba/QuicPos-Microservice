@@ -416,7 +416,7 @@ while True:
     #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
-    }""" % (recommender_acc, detector_acc, "BQB7NpJ87NDjkQyK")
+    }""" % (recommender_acc, detector_acc, "")
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print()

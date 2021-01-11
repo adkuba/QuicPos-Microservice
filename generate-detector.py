@@ -9,17 +9,14 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 #inputs
 textInput = tf.keras.Input(shape=(200,))
-mobilenet = tf.keras.applications.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')
-for layer in mobilenet.layers:
-    layer.trainable = False
+imageInput = tf.keras.Input(shape=(1280,))
 
-inputArray = [textInput, mobilenet.input]
+inputArray = [textInput, imageInput]
 
 
 #additional dense
 textDense = tf.keras.layers.Dense(256, activation='softmax', name="textDense")(textInput)
-imageFlat = tf.keras.layers.Flatten(name="imageFlat")(mobilenet.output)
-imageDense = tf.keras.layers.Dense(256, activation='softmax', name="imageDense")(imageFlat)
+imageDense = tf.keras.layers.Dense(256, activation='softmax', name="imageDense")(imageInput)
 
 
 #concat all + final layers
@@ -37,7 +34,7 @@ model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy']
 
 #test running
 text = numpy.array([[0]*200])
-image = numpy.array([[[ [0.4]*3 ]*224 ]*224])
+image = numpy.array([[0]*1280])
 
 myRandomInput = [text, image]
 

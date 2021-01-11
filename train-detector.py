@@ -55,6 +55,7 @@ def dataPrepare(post):
     del post['blocked']
     del post['money']
     del post['outsideviews']
+    del post['image']
     del post['user']
 
     return post
@@ -98,24 +99,11 @@ def postGenData(post):
     #print(text)
 
     #image
-    image = [[ [0]*3 ]*224 ]*224
-    if post['image'] != "":
-        try:
-            response = requests.get("https://storage.googleapis.com/quicpos-images/" + post['image'] + "_small")
-            if response.status_code == 200:
-                imagePIL = Image.open(io.BytesIO(response.content))
-                imagePIL = imagePIL.convert('RGB')
-                imageNumpy = numpy.array(imagePIL)
-                image = imageNumpy.tolist()
-                for width, widthRow in enumerate(image):
-                    for height, heightRow in enumerate(widthRow):
-                        for pixel, value in enumerate(heightRow):
-                            image[width][height][pixel] = float(value)/127.5 - 1
-                #print(image)
+    image = [0] * 1280
+    if post['imagefeatures'] != None:
+        image = post['imagefeatures']
 
-        except:
-            print("CANT download image")
-
+    #print(image)
     return text, image
 
 
@@ -146,66 +134,66 @@ def detectorGenerator(path):
                         aoutSpam = []
 
 
+
+#Create training set for recommender
+shutil.rmtree('./training', ignore_errors=True)
+os.mkdir('./training')
+os.mkdir('./training/detector')
+os.mkdir('./training/detector/train')
+os.mkdir('./training/detector/test')
+
+
+#process posts in batches of 100
+size = 100
+idx = 1
+detector_train_size = 0
+detector_test_size = 0
+
+
+#spam posts data
 while True:
-    #Create training set for recommender
-    shutil.rmtree('./training', ignore_errors=True)
-    os.mkdir('./training')
-    os.mkdir('./training/detector')
-    os.mkdir('./training/detector/train')
-    os.mkdir('./training/detector/test')
+    post_data = []
+    posts_blocked = getposts(int(size/2), idx, {"blocked": True, "initialreview": True})
+    posts_ok = getposts(int(size/2), idx, {"blocked": False, "initialreview": True})
+    if len(posts_blocked) == 0 or len(posts_ok) == 0:
+        break
+
+    posts = posts_blocked + posts_ok
+
+    for post in posts:
+        data = {}
+        data['spam'] = isSpam(post['blocked'])
+        post = dataPrepare(post)
+        data['post'] = post
+        post_data.append(data)
+
+    a, b = saver(post_data, './training/detector')
+    detector_train_size += a
+    detector_test_size += b
+    idx += 1
 
 
-    #process posts in batches of 100
-    size = 100
-    idx = 1
-    detector_train_size = 0
-    detector_test_size = 0
+batch_size = 32
 
 
-    #spam posts data
-    while True:
-        post_data = []
-        posts_blocked = getposts(int(size/2), idx, {"blocked": True, "initialreview": True})
-        posts_ok = getposts(int(size/2), idx, {"blocked": False, "initialreview": True})
-        if len(posts_blocked) == 0 or len(posts_ok) == 0:
-            break
+#train detector
+detector_train_gen = detectorGenerator("./training/detector/train")
+detector_test_gen = detectorGenerator("./training/detector/test")
+epochs = 100
+steps_per_epoch = detector_train_size / batch_size
+validation_steps = detector_test_size / batch_size
 
-        posts = posts_blocked + posts_ok
+model = keras.models.load_model("./out/detector_new_init.h5")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
+history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps, callbacks=[tensorboard_callback])
 
-        for post in posts:
-            data = {}
-            data['spam'] = isSpam(post['blocked'])
-            post = dataPrepare(post)
-            data['post'] = post
-            post_data.append(data)
+detector_acc = history.history['val_accuracy'][-1]
+print()
+print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
+print()
 
-        a, b = saver(post_data, './training/detector')
-        detector_train_size += a
-        detector_test_size += b
-        idx += 1
+with open("./training/detector_history", 'wb') as filepi:
+    pickle.dump(history.history, filepi)
 
-
-    batch_size = 32
-
-
-    #train detector
-    detector_train_gen = detectorGenerator("./training/detector/train")
-    detector_test_gen = detectorGenerator("./training/detector/test")
-    epochs = 500
-    steps_per_epoch = detector_train_size / batch_size
-    validation_steps = detector_test_size / batch_size
-
-    model = keras.models.load_model("./out/detector_new_init.h5")
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
-    history = model.fit(detector_train_gen, validation_data=detector_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps, callbacks=[tensorboard_callback])
-
-    detector_acc = history.history['val_accuracy'][-1]
-    print()
-    print("DETECTOR ACCURACY: " + str(history.history['val_accuracy'][-1]))
-    print()
-
-    with open("./training/detector_history", 'wb') as filepi:
-        pickle.dump(history.history, filepi)
-
-    model.save("./out/detector_new.h5")
-    tf.saved_model.save(model, "./out/detector_new")
+model.save("./out/detector_new.h5")
+tf.saved_model.save(model, "./out/detector")
