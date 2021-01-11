@@ -6,62 +6,44 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 #spam detector net
 
-#inputs
-textInput = tf.keras.Input(shape=(400,))
-userInput = tf.keras.Input(shape=(1,))
-reportsInput = tf.keras.Input(shape=(100,))
-creationInput = tf.keras.Input(shape=(1,))
-imageInput = tf.keras.Input(shape=(224, 224, 3))
-viewsInput = tf.keras.Input(shape=(100, 6))
-sharesInput = tf.keras.Input(shape=(100,))
 
-inputArray = [textInput, userInput, reportsInput, creationInput, imageInput, viewsInput, sharesInput]
+#inputs
+textInput = tf.keras.Input(shape=(200,))
+mobilenet = tf.keras.applications.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')
+for layer in mobilenet.layers:
+    layer.trainable = False
+
+inputArray = [textInput, mobilenet.input]
 
 
 #additional dense
-textDense = tf.keras.layers.Dense(128, activation='softmax')(textInput)
-reportsDense = tf.keras.layers.Dense(128, activation='softmax')(reportsInput)
-viewsFlat = tf.keras.layers.Flatten()(viewsInput)
-viewsDense = tf.keras.layers.Dense(128, activation='softmax')(viewsFlat)
-sharesDense = tf.keras.layers.Dense(128, activation='softmax')(sharesInput)
+textDense = tf.keras.layers.Dense(256, activation='softmax', name="textDense")(textInput)
+imageFlat = tf.keras.layers.Flatten(name="imageFlat")(mobilenet.output)
+imageDense = tf.keras.layers.Dense(256, activation='softmax', name="imageDense")(imageFlat)
 
-#image
-conv1 = tf.keras.layers.Conv2D(2, 3, activation='softmax', input_shape=(224, 224, 3))(imageInput)
-conv2 = tf.keras.layers.Conv2D(2, 3, activation='softmax', input_shape=conv1.shape)(conv1)
-imageFlat = tf.keras.layers.Flatten()(conv2)
-imageDense = tf.keras.layers.Dense(128, activation='softmax')(imageFlat)
-
-#concat rest
-restCon = tf.keras.layers.Concatenate()([userInput, creationInput])
-restDense = tf.keras.layers.Dense(128, activation='softmax')(restCon)
 
 #concat all + final layers
-allCon = tf.keras.layers.Concatenate()([textDense, reportsDense, viewsDense, sharesDense, imageDense, reportsDense])
-connected = tf.keras.layers.Dense(256, activation='softmax')(allCon)
-out = tf.keras.layers.Dense(1, activation='sigmoid')(connected)
+allCon = tf.keras.layers.Concatenate(name="allCon")([textDense, imageDense])
+connected = tf.keras.layers.Dense(256, activation='softmax', name="connected")(allCon)
+out = tf.keras.layers.Dense(1, activation='sigmoid', name="out")(connected)
 
 #model
 model = tf.keras.Model(inputs=inputArray, outputs=out)
-#print(model.summary())
+print(model.summary())
 
 #compile
 model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
 
 
 #test running
-text = numpy.array([[0]*400])
-user = numpy.array([[22344]])
-reports = numpy.array([[0]*100])
-creation = numpy.array([[2.3]])
+text = numpy.array([[0]*200])
 image = numpy.array([[[ [0.4]*3 ]*224 ]*224])
-views = numpy.array([[ [0]*6 ]*100])
-shares = numpy.array([[0]*100])
 
-myRandomInput = [text, user, reports, creation, image, views, shares]
+myRandomInput = [text, image]
 
 result = model.predict(myRandomInput)
 print(result.tolist())
 
 #save
-model.save("./out/detector_init.h5")
-#tf.saved_model.save(model, "./out/detector")
+model.save("./out/detector_new_init.h5")
+tf.saved_model.save(model, "./out/detector_new")

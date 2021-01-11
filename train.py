@@ -18,7 +18,7 @@ import scp_sender
 
 #Init trainer
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-client = MongoClient("")
+client = MongoClient("mongodb+srv://admin:ayeM3cKxV0AR4136@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
 db = client['quicpos']
 collection = db['posts']
 
@@ -416,7 +416,7 @@ while True:
     #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
-    }""" % (recommender_acc, detector_acc, "")
+    }""" % (recommender_acc, detector_acc, "BQB7NpJ87NDjkQyK")
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print()

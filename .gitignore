@@ -7,3 +7,7 @@ training/
 !out/.gitkeep
 
 __pycache__/
+
+dictionary
+
+logs/
