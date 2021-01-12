@@ -12,9 +12,10 @@ import numpy
 import random
 from tensorflow import keras
 import tensorflow as tf
-import pickle
+import json
 import time
 import scp_sender
+import pickle
 
 
 #Init trainer
@@ -25,8 +26,8 @@ collection = db['posts']
 dictionary = []
 
 
-with open('dictionary', 'rb') as fp:
-    dictionary = pickle.load(fp)
+with open('dictionary.json', 'r') as fp:
+    dictionary = json.load(fp)
 
 
 #page size - number of posts in page, page_num - page number to return
@@ -153,8 +154,8 @@ detector_test_size = 0
 #spam posts data
 while True:
     post_data = []
-    posts_blocked = getposts(int(size/2), idx, {"blocked": True, "initialreview": True})
-    posts_ok = getposts(int(size/2), idx, {"blocked": False, "initialreview": True})
+    posts_blocked = getposts(int(size/2), idx, {"blocked": True, "humanreview": True, "initialreview": True})
+    posts_ok = getposts(int(size/2), idx, {"blocked": False, "humanreview": True, "initialreview": True})
     if len(posts_blocked) == 0 or len(posts_ok) == 0:
         break
 

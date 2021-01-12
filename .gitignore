@@ -8,6 +8,6 @@ training/
 
 __pycache__/
 
-dictionary
+dictionary.json
 
 logs/

@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from tensorflow.keras.preprocessing.text import text_to_word_sequence
-import pickle
+import json
 
 #Init
 client = MongoClient("mongodb+srv://admin:ayeM3cKxV0AR4136@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
@@ -40,5 +40,5 @@ while True:
     idx += 1
 
 
-with open('dictionary', 'wb') as f:
-    pickle.dump(dictionary, f)
+with open('dictionary.json', 'w') as f:
+    json.dump(dictionary, f)
