@@ -16,6 +16,7 @@ import time
 import scp_sender
 from keras_preprocessing.text import text_to_word_sequence
 import passwords
+import dictionary as dc
 
 
 #Init trainer
@@ -24,10 +25,6 @@ client = MongoClient(passwords.mongoSRV)
 db = client['quicpos']
 collection = db['posts']
 dictionary = []
-
-
-with open('dictionary.json', 'r') as fp:
-    dictionary = json.load(fp)
 
 
 #page size - number of posts in page, page_num - page number to return
@@ -182,6 +179,12 @@ def recommenderGenerator(path):
 
 
 while True:
+
+    dc.generateDictionary()
+
+    with open('dictionary.json', 'r') as fp:
+        dictionary = json.load(fp)
+
     #Create training set for recommender
     shutil.rmtree('./training', ignore_errors=True)
     os.mkdir('./training')
@@ -225,7 +228,7 @@ while True:
         idx += 1
 
 
-    batch_size = 4
+    batch_size = 8
 
 
     median = 3
@@ -269,4 +272,4 @@ while True:
     print()
 
     #wait 6 hours
-    time.sleep(60 * 60 * 6)
+    time.sleep(60)
