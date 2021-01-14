@@ -16,11 +16,13 @@ import json
 import time
 import scp_sender
 import pickle
+import passwords
 
+#WARNING make passwords file with mongoSRV and password variable
 
 #Init trainer
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-client = MongoClient("mongodb+srv://admin:ayeM3cKxV0AR4136@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
+client = MongoClient(passwords.mongoSRV)
 db = client['quicpos']
 collection = db['posts']
 dictionary = []

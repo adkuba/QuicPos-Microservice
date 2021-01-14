@@ -15,11 +15,12 @@ import pickle
 import time
 import scp_sender
 from keras_preprocessing.text import text_to_word_sequence
+import passwords
 
 
 #Init trainer
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-client = MongoClient("mongodb+srv://admin:ayeM3cKxV0AR4136@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
+client = MongoClient(passwords.mongoSRV)
 db = client['quicpos']
 collection = db['posts']
 dictionary = []
@@ -180,99 +181,92 @@ def recommenderGenerator(path):
 
 
 
-#while True:
-#Create training set for recommender
-shutil.rmtree('./training', ignore_errors=True)
-os.mkdir('./training')
-os.mkdir('./training/recommender')
-os.mkdir('./training/recommender/train')
-os.mkdir('./training/recommender/test')
-
-
-#process posts in batches of 100
-size = 100
-idx = 1
-recommender_train_size = 0
-recommender_test_size = 0
-
-#Rocommender data
 while True:
-    post_data = []
-    posts = getposts(size, idx, {"blocked": False, "views": {"$ne": None}})
-    if len(posts) == 0:
-        break
-    
-    for post in posts:
-        #prepare values
-        post, views = dataPrepare(post, post['views'])
-
-        #create training set for every user
-        for view in views:
-            data = {}
-            data['userid'] = view['user']
-
-            postClone = post.copy()
-            data['post'] = postClone
-            data['time'] = view['time']
-            
-            post_data.append(data)
-    
-    #print(post_data)
-    a, b = saver(post_data, './training/recommender')
-    recommender_train_size += a
-    recommender_test_size += b
-    idx += 1
+    #Create training set for recommender
+    shutil.rmtree('./training', ignore_errors=True)
+    os.mkdir('./training')
+    os.mkdir('./training/recommender')
+    os.mkdir('./training/recommender/train')
+    os.mkdir('./training/recommender/test')
 
 
-batch_size = 4
+    #process posts in batches of 100
+    size = 100
+    idx = 1
+    recommender_train_size = 0
+    recommender_test_size = 0
+
+    #Rocommender data
+    while True:
+        post_data = []
+        posts = getposts(size, idx, {"blocked": False, "views": {"$ne": None}})
+        if len(posts) == 0:
+            break
+        
+        for post in posts:
+            #prepare values
+            post, views = dataPrepare(post, post['views'])
+
+            #create training set for every user
+            for view in views:
+                data = {}
+                data['userid'] = view['user']
+
+                postClone = post.copy()
+                data['post'] = postClone
+                data['time'] = view['time']
+                
+                post_data.append(data)
+        
+        #print(post_data)
+        a, b = saver(post_data, './training/recommender')
+        recommender_train_size += a
+        recommender_test_size += b
+        idx += 1
 
 
-median = 3
-median = getMedian()
-print()
-print("Median time: {}".format(median))
-print()
-#train recommender
-recommender_train_gen = recommenderGenerator("./training/recommender/train")
-recommender_test_gen = recommenderGenerator("./training/recommender/test")
-epochs = 100
-steps_per_epoch = recommender_train_size / batch_size
-validation_steps = recommender_test_size / batch_size
-
-model = keras.models.load_model("./out/recommender_init.h5")
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
-history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps, callbacks=[tensorboard_callback])
-
-recommender_acc = history.history['val_accuracy'][-1]
-print()
-print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
-print()
-
-with open("./training/recommender_history", 'wb') as filepi:
-    pickle.dump(history.history, filepi)
-
-model.save("./out/recommender.h5")
-tf.saved_model.save(model, "./out/recommender")
+    batch_size = 4
 
 
+    median = 3
+    median = getMedian()
+    print()
+    print("Median time: {}".format(median))
+    print()
+    #train recommender
+    recommender_train_gen = recommenderGenerator("./training/recommender/train")
+    recommender_test_gen = recommenderGenerator("./training/recommender/test")
+    epochs = 100
+    steps_per_epoch = recommender_train_size / batch_size
+    validation_steps = recommender_test_size / batch_size
 
+    model = keras.models.load_model("./out/recommender_init.h5")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
+    history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps, callbacks=[tensorboard_callback])
 
+    recommender_acc = history.history['val_accuracy'][-1]
+    print()
+    print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
+    print()
 
+    with open("./training/recommender_history", 'wb') as filepi:
+        pickle.dump(history.history, filepi)
 
-'''
+    model.save("./out/recommender.h5")
+    tf.saved_model.save(model, "./out/recommender")
+
     #scp send
-    scp_sender.sendFiles()
+    scp_sender.sendRecommender()
 
     #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
-    }""" % (recommender_acc, detector_acc, "")
+    }""" % (recommender_acc, -1, passwords.password)
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print()
     print("SENDING: " + str(r.status_code))
     print()
 
-    #wait 12 hours
-    time.sleep(60 * 60 * 12)
-'''
+    #wait 6 hours
+    time.sleep(60 * 60 * 6)

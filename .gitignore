@@ -11,3 +11,5 @@ __pycache__/
 dictionary.json
 
 logs/
+
+passwords.py

@@ -1,9 +1,10 @@
 from pymongo import MongoClient
 from tensorflow.keras.preprocessing.text import text_to_word_sequence
 import json
+import passwords
 
 #Init
-client = MongoClient("mongodb+srv://admin:ayeM3cKxV0AR4136@quicpos.felpr.gcp.mongodb.net/quicpos?retryWrites=true&w=majority")
+client = MongoClient(passwords.mongoSRV)
 db = client['quicpos']
 collection = db['posts']
 
