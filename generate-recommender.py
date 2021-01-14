@@ -35,7 +35,7 @@ model = tf.keras.Model(inputs=inputArray, outputs=out)
 print(model.summary())
 
 #compile
-model.compile(optimizer="adam", loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy'])
 
 
 #test running

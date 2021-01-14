@@ -187,6 +187,7 @@ while True:
 
     #Create training set for recommender
     shutil.rmtree('./training', ignore_errors=True)
+    shutil.rmtree('./logs', ignore_errors=True)
     os.mkdir('./training')
     os.mkdir('./training/recommender')
     os.mkdir('./training/recommender/train')
@@ -247,9 +248,9 @@ while True:
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
     history = model.fit(recommender_train_gen, validation_data=recommender_test_gen, steps_per_epoch = steps_per_epoch, epochs=epochs, validation_steps=validation_steps, callbacks=[tensorboard_callback])
 
-    recommender_acc = history.history['val_accuracy'][-1]
+    recommender_acc = history.history['val_acc'][-1]
     print()
-    print("RECOMMENDER ACCURACY: " + str(history.history['val_accuracy'][-1]))
+    print("RECOMMENDER ACCURACY: " + str(history.history['val_acc'][-1]))
     print()
 
     with open("./training/recommender_history", 'wb') as filepi:
@@ -264,7 +265,7 @@ while True:
     #update files
     query = """mutation learning {
         learning(input: { recommender: %f, detector: %f }, password: "%s")   
-    }""" % (recommender_acc, -1, passwords.password)
+    }""" % (recommender_acc, 0.7, passwords.password)
 
     r = requests.post("https://www.api.quicpos.com/query", json={'query': query})
     print()
@@ -272,4 +273,4 @@ while True:
     print()
 
     #wait 6 hours
-    time.sleep(60)
+    time.sleep(60 * 60 * 6)

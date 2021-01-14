@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from tensorflow.keras.preprocessing.text import text_to_word_sequence
 import json
 import passwords
+import scp_sender
 
 
 #page size - number of posts in page, page_num - page number to return
@@ -14,7 +15,7 @@ def getposts(page_size, page_num, query, collection):
 
 
 def generateDictionary():
-
+    print("Dictionary generator started!")
     client = MongoClient(passwords.mongoSRV)
     db = client['quicpos']
     collection = db['posts']
@@ -47,3 +48,5 @@ def generateDictionary():
 
     with open('dictionary.json', 'w') as f:
         json.dump(dictionary, f)
+
+    scp_sender.sendRecommenderDict()

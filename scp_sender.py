@@ -1,4 +1,5 @@
 from paramiko import SSHClient
+import paramiko
 from scp import SCPClient
 from os import listdir
 from os.path import isfile, join
@@ -12,6 +13,7 @@ def sendRecommender():
 
     ssh = SSHClient()
     ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect('142.93.232.180', username='root', password=passwords.serverPassword)
     scp = SCPClient(ssh.get_transport(), progress4=progress4)
 
@@ -32,6 +34,7 @@ def sendRecommenderDict():
 
     ssh = SSHClient()
     ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect('142.93.232.180', username='root', password=passwords.serverPassword)
     scp = SCPClient(ssh.get_transport(), progress4=progress4)
 
