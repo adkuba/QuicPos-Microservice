@@ -79,6 +79,7 @@ Using [generate-detector.py](generate-detector.py) generate spam detector neural
 
 ### Training
 Using [train-detector.py](train-detector.py) [train-recommender.py](train-recommender.py) and [dictionary.py](dictionary.py). Steps:
+* Create dictionary - keras text_to_word_sequence. Unique words in the array, neural net gets index of desired word in this array/dictionary.
 * Download data from Mongo database
 * Parse data for training
 * Make generator for training batches
